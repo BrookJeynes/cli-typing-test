@@ -16,11 +16,15 @@ fn main() {
     let mut stdout = stdout();
     enable_raw_mode().unwrap();
 
+    // what the user enters
     let mut characters: Vec<char> = Vec::new();
+
+    // make this random
     let challenge = String::from("this is an example sentence, dont fuck it up");
 
-
+    // start message
     execute!(stdout, Clear(ClearType::All), cursor::MoveTo(0, 0), Print("Press enter to start")).unwrap(); 
+    // wait for user input
     read().unwrap();
 
     // clear terminal and print challenge text
