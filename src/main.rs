@@ -2,11 +2,15 @@
 #[macro_use]
 extern crate crossterm;
 
-use colored::Colorize;
 use crossterm::cursor;
 use crossterm::event::{read, Event, KeyCode, KeyEvent};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
+use crossterm::style::{Print, SetForegroundColor, Color};
+use crossterm::style::Stylize;
+
 use std::io::{stdout};
+use std::time::{Duration, Instant};
+
 
 fn main() {
     let mut stdout = stdout();
@@ -15,10 +19,15 @@ fn main() {
     let mut characters: Vec<char> = Vec::new();
     let challenge = String::from("this is an example sentence, dont fuck it up");
 
-    // clear terminal
-    print!("{esc}[2J{esc}[1;1H", esc = 27 as char); 
 
-    print!("{}", format!("{}", challenge).blue());
+    execute!(stdout, Clear(ClearType::All), cursor::MoveTo(0, 0), Print("Press enter to start")).unwrap(); 
+    read().unwrap();
+
+    // clear terminal and print challenge text
+    execute!(stdout, Clear(ClearType::All), cursor::MoveTo(0, 0), SetForegroundColor(Color::Blue), Print(&challenge), cursor::MoveTo(0, 0)).unwrap(); 
+
+    // start timer
+    let now = Instant::now();
 
     //key detection
     loop {
@@ -40,14 +49,14 @@ fn main() {
             if let KeyCode::Char(char) = char_code {
                 characters.push(char);
                 
-                // if character is incorrect, make it red otherwise leave it
+                // if character is incorrect, make it red otherwise white
                 if char != challenge.chars().nth(characters.len()-1).unwrap() {
-                    // if character is a space make correct character red
-                    if char == ' ' {
+                    // if the correct character in the sequence is a space, place the incorrect character, otherwise replace with correct character
+                    if challenge.chars().nth(characters.len()-1).unwrap() == ' ' {
+                        println!("{}", format!("{}", char).red())
+                    } else {
                         execute!(stdout, cursor::MoveTo((characters.len()-1).try_into().unwrap(), 0)).unwrap();
                         println!("{}", format!("{}", challenge.chars().nth(characters.len()-1).unwrap()).red());
-                    } else {
-                        println!("{}", format!("{}", char).red())
                     }
                 } else {
                     println!("{}", format!("{}", char).white())
@@ -63,7 +72,11 @@ fn main() {
         }
     }
 
-    // (200 chars / 5) / 1 minute = words per minute
+    // check if this is correct
+    let elapsed: f32 = now.elapsed().as_secs() as f32 / 60.0;
+    let wpm: f32 = (characters.len() as f32 / 5.0) / elapsed;
+
+    println!("\n{:.0}", wpm);
 
     disable_raw_mode().unwrap();
 }
